@@ -291,7 +291,6 @@ UartDemux #(.FREQ(FREQ), .BAUDRATE(BAUDRATE)) uart_demux(
   // MUX which reads the current memory address and essentially pattern
   // matches it to the addresses of the cheat data we're trying to replace
   always @(loader_addr) begin
-    
     //TODO: add more if statements to replace every tile text with something
     //like "CSE498" or "ARORA" or something
     // CHEAT 1: replace WORLD with AAAAA
