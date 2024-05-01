@@ -257,10 +257,12 @@ UartDemux #(.FREQ(FREQ), .BAUDRATE(BAUDRATE)) uart_demux(
   wire [7:0] loader_write_data;
 
   // 8 bit bus for cheat code data (rom -> cheat -> cpu)
-  wire is_enable_cheat_code;
-  wire [7:0] loader_write_data_cheat_code;
+  reg is_enable_cheat_code;
+  reg [7:0] loader_write_data_cheat_code;
   wire [7:0] loader_write_data_genie = is_enable_cheat_code ? loader_write_data_cheat_code : loader_write_data;
 
+
+// ROM-Based Cheats
 
 // The 'failed attempt' below is due to needing to account for the iNES header in the .nes ROM for Super Mario Bros.
 // The loader module starts address 0x0 of the ROM data that is fed to the NES when it starts reading the actual ROM contents;
@@ -288,26 +290,90 @@ UartDemux #(.FREQ(FREQ), .BAUDRATE(BAUDRATE)) uart_demux(
 // (40 speed in NTSC) / (50Hz PAL / 60Hz NTSC) = 40 * 6/5 = 48 speed in PAL 
 
 
-  // MUX which reads the current memory address and essentially pattern
+  // MUX which reads the current ROM address and essentially pattern
   // matches it to the addresses of the cheat data we're trying to replace
   always @(loader_addr) begin
     //TODO: add more if statements to replace every tile text with something
     //like "CSE498" or "ARORA" or something
-    // CHEAT 1: replace WORLD with AAAAA
-    if ((loader_addr >= 21'h75D) && (loader_addr <= 21'h761)) begin
+    // CHEAT 1: replace HUD text MARIO / WORLD / TIME with ARORA / CEN-- -598
+    // MARIO -> ARORA
+    if (loader_addr == 21'h755) begin
       loader_write_data_cheat_code = 8'h0A; 
+      is_enable_cheat_code = 1'b1;
+    end
+    else if (loader_addr == 21'h756) begin
+      loader_write_data_cheat_code = 8'h1B; 
+      is_enable_cheat_code = 1'b1;
+    end
+    else if (loader_addr == 21'h757) begin
+      loader_write_data_cheat_code = 8'h18; 
+      is_enable_cheat_code = 1'b1;
+    end
+    else if (loader_addr == 21'h758) begin
+      loader_write_data_cheat_code = 8'h1B; 
+      is_enable_cheat_code = 1'b1;
+    end
+    else if (loader_addr == 21'h759) begin
+      loader_write_data_cheat_code = 8'h0A; 
+      is_enable_cheat_code = 1'b1;
+    end
+    // WORLD -> CEN--
+    else if (loader_addr == 21'h75D) begin
+      loader_write_data_cheat_code = 8'h0C; 
+      is_enable_cheat_code = 1'b1;
+    end
+    else if (loader_addr == 21'h75E) begin
+      loader_write_data_cheat_code = 8'h0E; 
+      is_enable_cheat_code = 1'b1;
+    end
+    else if (loader_addr == 21'h75F) begin
+      loader_write_data_cheat_code = 8'h17; 
+      is_enable_cheat_code = 1'b1;
+    end
+    else if (loader_addr == 21'h760) begin
+      loader_write_data_cheat_code = 8'h28; 
+      is_enable_cheat_code = 1'b1;
+    end
+    else if (loader_addr == 21'h761) begin
+      loader_write_data_cheat_code = 8'h28; 
+      is_enable_cheat_code = 1'b1;
+    end
+    // TIME -> -598
+    else if (loader_addr == 21'h764) begin
+      loader_write_data_cheat_code = 8'h28; 
+      is_enable_cheat_code = 1'b1;
+    end
+    else if (loader_addr == 21'h765) begin
+      loader_write_data_cheat_code = 8'h05; 
+      is_enable_cheat_code = 1'b1;
+    end
+    else if (loader_addr == 21'h766) begin
+      loader_write_data_cheat_code = 8'h09; 
+      is_enable_cheat_code = 1'b1;
+    end
+    else if (loader_addr == 21'h767) begin
+      loader_write_data_cheat_code = 8'h08; 
       is_enable_cheat_code = 1'b1;
     end
 
     // CHEAT 2: increase mario's velocity by a decent bit
-    if (loader_addr == 21'h3443) begin
+    else if (loader_addr == 21'h3443) begin
       loader_write_data_cheat_code = 8'h70; 
       is_enable_cheat_code = 1'b1;
     end
 
     //TODO: find memory addresses for fireball movement
-    // CHEAT 3: 
+    // CHEAT 3: aimbot fireballs that roll along the ground
+    else if (loader_addr == 21'h61D2) begin
+      loader_write_data_cheat_code = 8'hCF; 
+      is_enable_cheat_code = 1'b1;
+    end
+    else if (loader_addr == 21'h61E2) begin
+      loader_write_data_cheat_code = 8'hCF; 
+      is_enable_cheat_code = 1'b1;
+    end
 
+    // Default case
     else begin
       loader_write_data_cheat_code = loader_write_data;
       is_enable_cheat_code = 1'b0;
@@ -315,14 +381,6 @@ UartDemux #(.FREQ(FREQ), .BAUDRATE(BAUDRATE)) uart_demux(
 
 
   end
-
-//  // CHEAT 1
-//  // writes the bits of the new value to the cheat load line
-//  wire [7:0] loader_write_data_cheat_code = 8'h0A; 
-//  // checks for memory addresses of data we want to replace
-//  wire is_enable_cheat_code = (loader_addr >= 21'h75D) && (loader_addr <= 21'h761);
-//  // apply the cheat code if we have the correct address range
-//  wire [7:0] loader_write_data_genie = is_enable_cheat_code ? loader_write_data_cheat_code : loader_write_data;
 
   wire loader_write;
   wire [31:0] mapper_flags;
@@ -416,6 +474,8 @@ UartDemux #(.FREQ(FREQ), .BAUDRATE(BAUDRATE)) uart_demux(
         );
 
 /*verilator tracing_off*/
+  
+
   // Combine RAM and ROM data to a single address space for NES to access
   wire ram_busy, ram_fail;
   wire [19:0] ram_total_written;

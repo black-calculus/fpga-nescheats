@@ -101,7 +101,7 @@ always @(posedge clk) if (reset) begin
       Duty <= DIN[7:6];
       EnvLoop <= DIN[5];
       EnvDisable <= DIN[4];
-      Volume <= 0;
+      Volume <= DIN[3:0];
     end
     1: begin
 //      if (sq2) $write("SQ1: SweepEnable=%d, SweepPeriod=%d, SweepNegate=%d, SweepShift=%d, DIN=%X\n", DIN[7], DIN[6:4], DIN[3], DIN[2:0], DIN);
@@ -399,7 +399,7 @@ module NoiseChan(input clk, input ce, input reset,
   assign Sample = 
     (LenCtr == 0 || Shift[0]) ?
       0 : 
-      (EnvDisable ? Volume : Volume);
+      (EnvDisable ? Volume : Envelope);
 endmodule
 
 module DmcChan(input clk, input ce, input reset,
